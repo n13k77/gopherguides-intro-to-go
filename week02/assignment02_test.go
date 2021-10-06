@@ -12,7 +12,7 @@ func TestArray(t *testing.T) {
 	for i, n := range exp {
 		act[i] = n
 	}
-	
+
 	// Iterate through the act variable and assert that its contents match that of the exp variable.
 	for i := range act {
 		if act[i] != exp[i] {
@@ -50,14 +50,14 @@ func TestMap(t *testing.T) {
 		3: "George",
 		4: "Ringo",
 	}
-	act:= map[int]string{}
+	act := map[int]string{}
 
 	// Iterate through the exp variable and copy its values into the act variable.
 	for key, value := range exp {
 		act[key] = value
 	}
 
-	// Iterate through the act variable and assert that its contents match that of the exp variable. 
+	// Iterate through the act variable and assert that its contents match that of the exp variable.
 	// Assert that the key being requested from exp exists
 	for key, value := range act {
 		expectedValue, ok := exp[key]
