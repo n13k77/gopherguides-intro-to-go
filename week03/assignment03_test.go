@@ -6,33 +6,25 @@ import (
 	"testing"
 )
 
-// 	testing publicly accessible fields of the struct. This might look like overkill, but it
-//   	turned out to be very valid in making sure the testing mechanism and referencing to the
-//	movies package actually  worked.
-func TestMovie(t *testing.T) {
-	t.Parallel()
-	_ = Movie{
-		Length: 120,
-		Name:   "testMovie",
-	}
-}
-
 // test the Rate function in Error conditions
 func TestRateError(t *testing.T) {
 	t.Parallel()
-	type testCase struct {
+
+	testCases := []struct{
 		plays int
-	}
-	testCases := []testCase{
+	}{
 		{plays: 0},
 		{plays: 10},
 		{plays: 100},
 	}
+
 	for _, tc := range testCases {
+
 		m := Movie{
 			Name:   "TestTitle",
 			Length: 10,
 		}
+
 		for i := 0; i < tc.plays; i++ {
 			m.Play(1)
 			err := m.Rate(1.0)
@@ -51,51 +43,68 @@ func TestRateError(t *testing.T) {
 //	and read with Plays function so these functions can only be tested in tandem. Makes
 //	use of Viewers() function
 func TestPlay(t *testing.T) {
-	type testCase struct {
+
+	t.Parallel()
+
+	testCases := []struct{
 		plays   int
 		viewers int
-	}
-	testCases := []testCase{
+	}{
 		{plays: 0, viewers: 10},
 		{plays: 20, viewers: 30},
 		{plays: 5000, viewers: 20},
 	}
+
 	for _, tc := range testCases {
+
 		m := Movie{
 			Name:   "TestTitle",
 			Length: 0,
 		}
+
 		for i := 0; i < tc.plays; i++ {
 			m.Play(tc.viewers)
 		}
-		if m.Plays() != tc.plays {
-			t.Errorf("Expected %d plays, got %d", tc.plays, m.Plays())
+
+		exp := m.Plays()
+		act := tc.plays
+
+		if exp != act {
+			t.Errorf("expected %d plays, got %d", exp, act)
 		}
 	}
 }
 
 // test Viewers function, makes use of the Play() function
 func TestViewers(t *testing.T) {
+
 	t.Parallel()
-	type testCase struct {
+
+	testCases := []struct{
 		plays   int
 		viewers int
-	}
-	testCases := []testCase{
+	}{
 		{plays: 0, viewers: 10},
 		{plays: 20, viewers: 30},
 		{plays: 5000, viewers: 20},
 	}
+
 	for _, tc := range testCases {
+
 		m := Movie{
 			Name:   "TestTitle",
 			Length: 0,
 		}
+
 		for i := 0; i < tc.plays; i++ {
 			m.Play(tc.viewers)
 		}
-		if m.Viewers() != (tc.plays * tc.viewers) {
-			t.Errorf("Expected %d viewers, got %d", tc.plays*tc.viewers, m.Viewers())
+
+		act := m.Viewers()
+		exp := tc.plays * tc.viewers
+
+		if act != exp {
+			t.Errorf("expected %d viewers, got %d", exp, act)
 		}
 	}
 }
@@ -104,68 +113,82 @@ func TestViewers(t *testing.T) {
 //	private fields; movie rate can only be set with Rate function and read with Rating function
 //	so these functions can only be tested in tandem.
 func TestRating(t *testing.T) {
+
 	t.Parallel()
-	type testCase struct {
+
+	testCases := []struct{
 		plays  int
 		rating float32
-	}
-	testCases := []testCase{
+	}{
 		{plays: 1, rating: 1.0},
 		{plays: 10, rating: 5.0},
 		{plays: 10, rating: 0.0},
 		{plays: 5000, rating: 10.0},
 	}
+
 	for _, tc := range testCases {
+
 		m := Movie{
 			Name:   "testTitle",
 			Length: 0,
 		}
+
 		for i := 0; i < tc.plays; i++ {
 			m.Play(1)
 			m.Rate(tc.rating)
 		}
 		// Rate and Rating use float32 and float64, respectively. Conversion needed to compare
-		if float32(m.Rating()) != tc.rating {
-			t.Errorf("Expected %.2f, got %.2f", tc.rating, m.Rating())
-		}
 
+		act := float32(m.Rating())
+		exp := tc.rating
+
+		if  act != exp {
+			t.Errorf("expected %.2f, got %.2f", exp, act)
+		}
 	}
 }
 
 // tests the String function
 func TestString(t *testing.T) {
+
 	t.Parallel()
-	type testCase struct {
+
+	testCases := []struct{
 		title  string
 		length int
 		rate   float32
-	}
-	testCases := []testCase{
+	}{
 		{"TestTitle 1", 100, 0.0},
 		{"A 'slightly' more advanced _ title!", 20, 8.0},
 		{"你好吗", 75, 6.5},
 	}
+
 	for _, tc := range testCases {
+
 		m := Movie{
 			Name:   tc.title,
 			Length: tc.length,
 		}
+
 		m.Rate(tc.rate)
-		expected := fmt.Sprintf("%s (%dm) %.2f%%", m.Name, m.Length, m.totalRating)
-		if m.String() != expected {
-			t.Errorf("Expected:\n %s\n, got:\n%s\n", expected, m.String())
+		act := m.String()
+		exp := fmt.Sprintf("%s (%dm) %.2f%%", m.Name, m.Length, m.totalRating)
+
+		if act != exp {
+			t.Errorf("expected:\n %s\n, got:\n%s\n", exp, act)
 		}
 	}
 }
 
 // tests the Play function for Theatre struct
 func TestTheatrePlay(t *testing.T) {
+
 	t.Parallel()
-	type testCase struct {
+
+	testCases := []struct{
 		movies  int
 		viewers int
-	}
-	testCases := []testCase{
+	}{
 		{2, 300},
 		{4, 75},
 		{10, 100},
@@ -181,11 +204,19 @@ func TestTheatrePlay(t *testing.T) {
 			}
 			m = append(m, &testCase)
 		}
-		theatre.Play(tc.viewers, m...)
+
+		err := theatre.Play(tc.viewers, m...)
+		if err != nil {
+			t.Error(err)
+		}
 
 		for i := 0; i < len(m); i++ {
-			if m[i].viewers != tc.viewers {
-				t.Errorf("Expected: %d viewers, got: %d", tc.viewers, m[i].viewers)
+
+			act := m[i].viewers
+			exp := tc.viewers
+
+			if act != exp {
+				t.Errorf("expected: %d viewers, got: %d", exp, act)
 			}
 		}
 	}
@@ -203,8 +234,8 @@ func TestCritique(t *testing.T) {
 		return rand.Float32() * 100.0, nil
 	}
 
-	testTheatre := Theatre{}
-	var testMovies []*Movie
+	theatre := Theatre{}
+	var movies []*Movie
 
 	type testCase struct {
 		numberOfMovies int
@@ -222,18 +253,16 @@ func TestCritique(t *testing.T) {
 				Length: 10,
 			}
 			m.Play(tc.viewers)
-			testMovies = append(testMovies, &m)
+			movies = append(movies, &m)
 		}
-		err := testTheatre.Critique(testMovies, generateCritique)
+		err := theatre.Critique(movies, generateCritique)
 
 		if err != nil {
-			// I do not know how to wrap the received error here
-			fmt.Println(err)
-			t.Errorf("error while rating movie")
+			t.Error(err)
 		}
 
 		for i := 0; i < tc.numberOfMovies; i++ {
-			if testMovies[i].Rating() <= 0 {
+			if movies[i].Rating() <= 0 {
 				t.Errorf("a movie did not get reviews")
 			}
 		}

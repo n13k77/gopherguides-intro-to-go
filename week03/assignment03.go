@@ -4,7 +4,7 @@ import (
 	"fmt"
 )
 
-// A Movie represents a movie that plays in a Theatre
+// Movie represents a movie that plays in a Theatre
 type Movie struct {
 	Length      int     // the length of a Movie, in minutes
 	Name        string  // the name of the Movie
@@ -16,7 +16,7 @@ type Movie struct {
 // the signature of a function that can be implemented to generate a critique for a Movie
 type CritiqueFn func(m *Movie) (float32, error)
 
-// a Theatre represents a theatre were a movie can be played
+// Theatre represents a theatre were a movie can be played
 type Theatre struct {
 	// empty struct
 }
