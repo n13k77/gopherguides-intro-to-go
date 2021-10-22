@@ -55,7 +55,7 @@ func (c cleanEntertainer) Name() string {
 func (c cleanEntertainer) Perform(v Venue) error {
 
 	if v.Audience > 100 {
-		return fmt.Errorf("entertainer %s refusing to set up for %d people, too big of a mess", c.FullName, v.Audience)
+		return fmt.Errorf("entertainer %s refusing to perform for %d people, it will be too big of a mess", c.FullName, v.Audience)
 	}
 
 	return nil
@@ -64,7 +64,7 @@ func (c cleanEntertainer) Perform(v Venue) error {
 func (c cleanEntertainer) Teardown(v Venue) error {
 
 	if v.Audience > 100 {
-		return fmt.Errorf("entertainer %s refusing tear down in front of for %d people, too big of a mess", c.FullName, v.Audience)
+		return fmt.Errorf("entertainer %s refusing tear down in front of for %d people, it's too big of a mess", c.FullName, v.Audience)
 	}
 
 	return nil
@@ -75,29 +75,49 @@ type Venue struct {
 	Log      io.Writer
 }
 
-func (v *Venue) Entertain (n int, e []Entertainer) {
+func (v Venue) show (ent Entertainer) error {
 
-	for _, ent := range e {
+	name := ent.Name()
 
-		if ent, ok := ent.(messyEntertainer); ok {
-			err := ent.Setup(*v)
-			if err != nil {
-				v.Log.Write([]byte(fmt.Sprintf("%s has completed setup.\n", ent.Name())))
-			}
-		}
-
-		err := ent.Perform(*v)
+	if ent, ok := ent.(Setuper); ok {
+		err := ent.Setup(v)
 		if err != nil {
-			v.Log.Write([]byte(fmt.Sprintf("%s has performed for %d people.\n", ent.Name(), v.Audience)))
+			return err
 		}
+		fmt.Fprintf(v.Log, "%s has completed setup.\n", name)
+	}
 
-		if ent, ok := ent.(cleanEntertainer); ok {
-			_ = ent.Teardown(*v)
-			if err != nil {
-				v.Log.Write([]byte(fmt.Sprintf("%s has completed teardown.\n", ent.Name())))
-			}
+	err := ent.Perform(v)
+	if err != nil {
+		return err
+	}
+	fmt.Fprintf(v.Log, "%s has performed for %d people.\n", name, v.Audience)
+
+	if ent, ok := ent.(Teardowner); ok {
+		err := ent.Teardown(v)
+		if err != nil {
+			return err
+		}
+		fmt.Fprintf(v.Log, "%s has completed teardown.\n", name)
+	}
+
+	return nil
+}
+
+func (v *Venue) Entertain (n int, e ...Entertainer) error {
+
+	if len(e) == 0 {
+		return fmt.Errorf("no entertainers to perform")
+	}
+
+	v.Audience = n
+	for _, ent := range e {
+		err := v.show(ent)
+		if err != nil {
+			return(err)
 		}
 	}
+
+	return nil
+
 } 
-
-
