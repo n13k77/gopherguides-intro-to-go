@@ -29,7 +29,7 @@ func (m messyEntertainer) Name() string {
 func (m messyEntertainer) Perform(v Venue) error {
 
 	if v.Audience < 100 {
-		return fmt.Errorf("entertainer %s refusing to perform for %d people, not worth the mess", m.FullName, v.Audience)
+		return fmt.Errorf("entertainer %s refusing to perform for %d people, too small of a mess", m.FullName, v.Audience)
 	}
 
 	return nil
@@ -38,7 +38,7 @@ func (m messyEntertainer) Perform(v Venue) error {
 func (m messyEntertainer) Setup(v Venue) error {
 
 	if v.Audience < 100 {
-		return fmt.Errorf("entertainer %s refusing to set up for %d people, not worth the mess", m.FullName, v.Audience)
+		return fmt.Errorf("entertainer %s refusing to set up for %d people, too small of a mess", m.FullName, v.Audience)
 	}
 
 	return nil
