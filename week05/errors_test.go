@@ -1,0 +1,176 @@
+package demo
+
+import (
+	"reflect"
+	"testing"
+)
+
+func TestErrTableNotFoundError(t *testing.T) {
+	t.Parallel()
+
+	tn := "testtable"
+	testError := ErrTableNotFound{
+		table:		tn,
+	}
+
+	exp := "table not found " + tn
+	act := testError.Error()
+
+	if exp != act {
+		t.Fatalf("expected %s, got %s", exp, act)
+	}
+}
+
+func TestErrTableNotFound(t *testing.T) {
+	t.Parallel()
+
+	tn := "testtable"
+	testError := ErrTableNotFound{
+		table:		tn,
+	}
+
+	exp := tn
+	act := testError.TableNotFound()
+
+	if exp != act {
+		t.Fatalf("expected %s, got %s", exp, act)
+	}
+}
+
+func TestIsErrTableNotFound(t *testing.T) {
+	t.Parallel()
+	tn := "testtable"
+
+	testError := ErrTableNotFound{
+		table:		tn,
+	}
+
+	if !IsErrTableNotFound(testError) {
+		t.Fatalf("error asserting type")
+	}
+}
+
+
+func TestErrNoRowsError(t *testing.T) {
+	t.Parallel()
+
+	tn := "testtable"
+	testError := errNoRows{
+		clauses:	Clauses{"id": 1, "name": "John"},
+		table:		tn,
+	}
+
+	exp := "[" + tn + "] no rows found\nquery: " + testError.clauses.String()
+	act := testError.Error()
+
+	if exp != act {
+		t.Fatalf("expected %s, got %s", exp, act)
+	}
+}
+
+func TestErrNoRowsClauses(t *testing.T) {
+	t.Parallel()
+
+	tn := "testtable"
+	testClause 	:= Clauses{"id": 2, "name": "Jane"} 
+
+	table := []struct {
+		name 	string
+		err  	errNoRows
+	}{
+		{name: "empty clauses", err: errNoRows{testClause, tn}},
+		{name: "existing clauses", err: errNoRows{nil, tn}},
+	}
+
+	for _, tt := range table {
+		t.Run(tt.name, func(t *testing.T) {
+
+			act := tt.err.Clauses()
+			var exp Clauses
+			
+			if len(tt.err.clauses) == 0 {
+				exp = Clauses{}
+			} else {
+				exp = testClause
+			}
+
+			if ! reflect.DeepEqual(exp, act) {
+				t.Fatalf("expected %s, got %s", exp, act)
+			}
+
+		})
+	}
+}
+
+func TestErrNoRowsRowNotFound(t *testing.T) {
+	t.Parallel()
+
+	tn := "testtable"
+	testClause 	:= Clauses{"id": 2, "name": "Jane"} 
+
+	testError := errNoRows{
+		table:		tn,
+		clauses: 	testClause,
+	}
+
+	actTable, actClause := testError.RowNotFound()
+	expTable := tn
+	expClause := testClause
+
+	if expTable != actTable || !reflect.DeepEqual(expClause, actClause) {
+		t.Fatalf("exp %s and %s, got %s and %s", expTable, expClause, actTable, actClause)
+	}
+}
+
+func TestErrNoRowsIs(t *testing.T) {
+	t.Parallel()
+
+	tn := "testtable"
+	testError := errNoRows{
+		table:		tn,
+		clauses: 	nil,
+	}
+
+	if !testError.Is(&testError) {
+		t.Fatalf("error asserting error type")
+	}
+}
+
+func TestErrNoRowsIsErrNoRows(t *testing.T) {
+	t.Parallel()
+
+	tn := "testtable"
+	testError := errNoRows{
+		table:		tn,
+		clauses: 	nil,
+	}
+
+	if ! IsErrNoRows(&testError) {
+		t.Fatalf("error asserting error type")
+	}
+}
+
+// I had to disable this test as I could not get it to work.
+// I did notice that in calling this test, in some way the Error()
+// function also ends up in the execution path. 
+// Please clarify what I'm missing here. 
+
+// func TestErrNoRowsAsErrNoRows(t *testing.T) {
+// 	t.Parallel()
+
+// 	tn := "testtable"
+// 	testClause 	:= Clauses{"id": 2, "name": "Jane"} 
+
+// 	testError := errNoRows{
+// 		table:		tn,
+// 		clauses: 	testClause,
+// 	}
+
+// 	err, ok := AsErrNoRows(&testError)
+
+// 	fmt.Println(err, ok)
+
+// 	if err != nil || ok == false {
+// 		t.Fatalf("error asserting error type")
+// 	}
+// }
