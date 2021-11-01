@@ -165,28 +165,16 @@ func TestErrNoRowsIsErrNoRows(t *testing.T) {
 	}
 }
 
-// // I had to disable this test as I could not get it to work.
-// // I did notice that in calling this test, in some way the Error()
-// // function also ends up in the execution path. 
-// // Please clarify what I'm missing here. 
+func TestErrNoRowsAsErrNoRows(t *testing.T) {
+	t.Parallel()
 
-// func TestErrNoRowsAsErrNoRows(t *testing.T) {
-// 	t.Parallel()
+	s := &Store{}
+	s.Insert("users", Model{"id": 1, "name": "John"})
+	_, err := s.Select("users", Clauses{"id": 2})
 
-// 	tn := "testtable"
-// 	testClause 	:= Clauses{"id": 2, "name": "Jane"} 
+	_, check := AsErrNoRows(err)
 
-// 	testError := errNoRows{
-// 		table:		tn,
-// 		clauses: 	testClause,
-// 	}
-
-// 	// testerr, ok := AsErrNoRows(&testError)
-// 	s := &Store{}
-// 	s.Insert("users", Model{"id": 1, "name": "John"})
-// 	_, err := s.Select("users", Clauses{"id": 2})
-
-// 	if AsErrNoRows(err) {
-// 		t.Fatalf("error asserting error type")
-// 	}
-// }
+	if ! check {
+		t.Fatalf("error asserting error type")
+	}
+}
