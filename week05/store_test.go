@@ -33,6 +33,16 @@ func withUsers(t testing.TB) *Store {
 	}
 }
 
+func assertModel(t testing.TB, act Model, exp Model) bool {
+	t.Helper()
+	for k, v := range exp {
+		if act[k] != v {
+			return false
+		}
+	}
+	return true
+}
+
 func TestStoreDb(t *testing.T) {
 	t.Parallel()
 
@@ -229,10 +239,14 @@ func TestStoreSelect(t *testing.T) {
 				t.Fatalf("did not expect error, got %v", err)
 			}
 
-			if !reflect.DeepEqual(exp, act) { 
-				t.Fatalf("expected %s, got %s", exp, act)
+			// ok, I dropped the reflect.DeepEquals :)
+			// Thanks for the guidance in class
+			for i, m := range exp {
+				if ! assertModel(t, act[i], m) {
+					t.Fatalf("expected %s, got %s", m, act[i])
+				}
 			}
-	 	})
+		})
 	}
 }
 

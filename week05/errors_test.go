@@ -6,6 +6,16 @@ import (
 	"testing"
 )
 
+func assertClause(t testing.TB, act Clauses, exp Clauses) bool {
+	t.Helper()
+	for k, v := range exp {
+		if act[k] != v {
+			return false
+		}
+	}
+	return true
+}
+
 func TestErrTableNotFoundError(t *testing.T) {
 	t.Parallel()
 
@@ -112,12 +122,16 @@ func TestErrNoRowsRowNotFound(t *testing.T) {
 	expTable := tn
 	expClause := testClause
 
-	if expTable != actTable || !reflect.DeepEqual(expClause, actClause) {
+	if expTable != actTable {
 		t.Fatalf("expected table %s, got %s", expTable, actTable)
 	}
 
 	if !reflect.DeepEqual(expClause, actClause) {
 		t.Fatalf("expected clause %s got %s", expClause, actClause)
+	}
+	
+	if ! assertClause(t, actClause, expClause) {
+		t.Fatalf("expected %s, got %s", expClause, actClause)
 	}
 }
 
@@ -144,15 +158,17 @@ func TestErrNoRowsIsErrNoRows(t *testing.T) {
 		clauses: 	nil,
 	}
 
+	// ok, I dropped the reflect.DeepEquals :)
+	// Thanks for the guidance in class
 	if ! IsErrNoRows(&testError) {
 		t.Fatalf("error asserting error type")
 	}
 }
 
-// I had to disable this test as I could not get it to work.
-// I did notice that in calling this test, in some way the Error()
-// function also ends up in the execution path. 
-// Please clarify what I'm missing here. 
+// // I had to disable this test as I could not get it to work.
+// // I did notice that in calling this test, in some way the Error()
+// // function also ends up in the execution path. 
+// // Please clarify what I'm missing here. 
 
 // func TestErrNoRowsAsErrNoRows(t *testing.T) {
 // 	t.Parallel()
@@ -165,11 +181,12 @@ func TestErrNoRowsIsErrNoRows(t *testing.T) {
 // 		clauses: 	testClause,
 // 	}
 
-// 	err, ok := AsErrNoRows(&testError)
+// 	// testerr, ok := AsErrNoRows(&testError)
+// 	s := &Store{}
+// 	s.Insert("users", Model{"id": 1, "name": "John"})
+// 	_, err := s.Select("users", Clauses{"id": 2})
 
-// 	fmt.Println(err, ok)
-
-// 	if err != nil || ok == false {
+// 	if AsErrNoRows(err) {
 // 		t.Fatalf("error asserting error type")
 // 	}
 // }
