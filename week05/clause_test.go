@@ -4,14 +4,9 @@ import (
 	"testing"
 )
 
-func emptyClauses(t testing.TB) *Clauses {
+func nonEmptyClauses(t testing.TB) Clauses {
 	t.Helper()
-	return &Clauses{}
-}
-
-func nonEmptyClauses(t testing.TB) *Clauses {
-	t.Helper()
-	return &Clauses{
+	return Clauses{
 		"a": 42.0,
 		"qwerty": "asdf",
 	}
@@ -22,10 +17,10 @@ func TestClauseString(t *testing.T) {
 
 	table := []struct {
 		name	string
-		cls 	*Clauses
+		cls 	Clauses
 		exp   	string
 	}{
-		{name: "empty clauses", cls: emptyClauses(t), exp: ""},
+		{name: "empty clauses", cls: Clauses{}, exp: ""},
 		{name: "non-empty clauses", cls: nonEmptyClauses(t) , exp: "\"a\" = %!q(float64=42) and \"qwerty\" = \"asdf\""},
 	}
 
@@ -55,14 +50,11 @@ func TestClauseMatch(t *testing.T) {
 
 	table := []struct {
 		name	string
-		cls 	*Clauses
+		cls 	Clauses
 		model	Model
 		exp   	bool
 	}{
-		// testing with an empty Clauses returns true, whatever you compare it with. 
-		// I would expect Match to only return true if both the model and clauses are empty,
-		// so I had to skip the first test.
-		// {name: "compare model with empty clause", cls: emptyClauses(t), model: nonMatchingModel, exp: false},
+		{name: "compare model with empty clause", cls: Clauses{}, model: nonMatchingModel, exp: true},
 		{name: "matching model", cls: nonEmptyClauses(t), model: matchingModel, exp: true},
 		{name: "non-matching model", cls: nonEmptyClauses(t), model: nonMatchingModel, exp: false},
 	}

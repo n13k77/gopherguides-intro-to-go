@@ -1,6 +1,7 @@
 package demo
 
 import (
+	"fmt"
 	"reflect"
 	"testing"
 )
@@ -60,7 +61,7 @@ func TestErrNoRowsError(t *testing.T) {
 		table:		tn,
 	}
 
-	exp := "[" + tn + "] no rows found\nquery: " + testError.clauses.String()
+	exp := fmt.Sprintf("[%s] no rows found\nquery: %s", tn, testError.clauses.String())
 	act := testError.Error()
 
 	if exp != act {
@@ -76,26 +77,20 @@ func TestErrNoRowsClauses(t *testing.T) {
 
 	table := []struct {
 		name 	string
+		exp 	Clauses
 		err  	errNoRows
 	}{
-		{name: "empty clauses", err: errNoRows{testClause, tn}},
-		{name: "existing clauses", err: errNoRows{nil, tn}},
+		{name: "existing clauses", exp: testClause, err: errNoRows{testClause, tn}},
+		{name: "empty clauses", exp: Clauses{}, err: errNoRows{nil, tn}},
 	}
 
 	for _, tt := range table {
 		t.Run(tt.name, func(t *testing.T) {
 
 			act := tt.err.Clauses()
-			var exp Clauses
 			
-			if len(tt.err.clauses) == 0 {
-				exp = Clauses{}
-			} else {
-				exp = testClause
-			}
-
-			if ! reflect.DeepEqual(exp, act) {
-				t.Fatalf("expected %s, got %s", exp, act)
+			if ! reflect.DeepEqual(tt.exp, act) {
+				t.Fatalf("expected %s, got %s", tt.exp, act)
 			}
 
 		})
@@ -118,7 +113,11 @@ func TestErrNoRowsRowNotFound(t *testing.T) {
 	expClause := testClause
 
 	if expTable != actTable || !reflect.DeepEqual(expClause, actClause) {
-		t.Fatalf("exp %s and %s, got %s and %s", expTable, expClause, actTable, actClause)
+		t.Fatalf("expected table %s, got %s", expTable, actTable)
+	}
+
+	if !reflect.DeepEqual(expClause, actClause) {
+		t.Fatalf("expected clause %s got %s", expClause, actClause)
 	}
 }
 
