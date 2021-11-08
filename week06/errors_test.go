@@ -5,6 +5,7 @@ import (
 )
 
 func TestError(t *testing.T) {
+	t.Parallel()
 	testCases := []struct {
 		name	string
 		err 	error

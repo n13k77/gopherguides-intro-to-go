@@ -5,6 +5,7 @@ import (
 )
 
 func TestManagerStart(t *testing.T) {
+	t.Parallel()
 	testCases := []struct {
 		name	string
 		emp 	int
@@ -28,6 +29,7 @@ func TestManagerStart(t *testing.T) {
 }
 
 func TestManagerAssignStopped(t *testing.T) {
+	t.Parallel()
 	tc := struct {
 		name	string
 		err 	error
@@ -51,6 +53,7 @@ func TestManagerAssignStopped(t *testing.T) {
 }
 
 func TestManagerAssign(t *testing.T) {
+	t.Parallel()
 	testCases := []struct {
 		name		string
 		products 	[]*Product
@@ -110,6 +113,7 @@ func TestManagerAssign(t *testing.T) {
 }
 
  func TestManagerComplete(t *testing.T) {
+	t.Parallel()
 	tc := struct {
 		name		string
 		product 	Product
@@ -166,60 +170,3 @@ func TestManagerAssign(t *testing.T) {
 
 	})
 }
-
-
-// func TestManagerDone(t *testing.T) {
-// 	testCases := []struct {
-// 		name	string
-		
-// 	}{
-// 		{name: ""},
-// 	}
-// 	for _, tc := range testCases {
-// 		t.Run(tc.name, func(t *testing.T) {
-			
-// 		})
-// 	}
-// }
-
-// func TestManagerJobs(t *testing.T) {
-// 	testCases := []struct {
-// 		name	string
-		
-// 	}{
-// 		{name: ""},
-// 	}
-// 	for _, tc := range testCases {
-// 		t.Run(tc.name, func(t *testing.T) {
-			
-// 		})
-// 	}
-// }
-
-// func TestManagerErrors(t *testing.T) {
-// 	testCases := []struct {
-// 		name	string
-		
-// 	}{
-// 		{name: ""},
-// 	}
-// 	for _, tc := range testCases {
-// 		t.Run(tc.name, func(t *testing.T) {
-			
-// 		})
-// 	}
-// }
-
-// func TestManagerStop(t *testing.T) {
-// 	testCases := []struct {
-// 		name	string
-		
-// 	}{
-// 		{name: ""},
-// 	}
-// 	for _, tc := range testCases {
-// 		t.Run(tc.name, func(t *testing.T) {
-			
-// 		})
-// 	}
-// }

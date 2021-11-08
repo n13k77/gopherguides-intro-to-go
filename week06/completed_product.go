@@ -6,7 +6,7 @@ type CompletedProduct struct {
 	Employee Employee // Employee who built the product
 }
 
-// IsValid returns true if the product has been built.
+// IsValid returns an error if the product is invalid.
 func (cp CompletedProduct) IsValid() error {
 	if err := cp.Employee.IsValid(); err != nil {
 		return err

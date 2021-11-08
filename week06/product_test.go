@@ -5,6 +5,7 @@ import (
 )
 
 func TestProductBuiltBy(t *testing.T) {
+	t.Parallel()
 	tc := struct {
 		name	string
 		emp 	Employee
@@ -39,6 +40,7 @@ func TestProductBuiltBy(t *testing.T) {
 // From the implementation of func (p *Product) Build(e Employee) 
 // I do not see how the last condition is checked in that function
 func TestProductBuild(t *testing.T) {
+	t.Parallel()
 	testCases := []struct {
 		name	string
 		emp 	Employee
@@ -62,6 +64,7 @@ func TestProductBuild(t *testing.T) {
 }
 
 func TestProductIsValid(t *testing.T) {
+	t.Parallel()
 	testCases := []struct {
 		name	string
 		qty 	int
@@ -86,6 +89,7 @@ func TestProductIsValid(t *testing.T) {
 }
 
 func TestProductIsBuilt(t *testing.T) {
+	t.Parallel()
 	testCases := []struct {
 		name	string
 		emp 	Employee

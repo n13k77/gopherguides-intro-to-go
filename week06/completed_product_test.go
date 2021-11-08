@@ -5,6 +5,7 @@ import (
 )
 
 func TestCompletedProductIsValid(t *testing.T) {
+	t.Parallel()
 	testCases := []struct {
 		name	string
 		emp 	Employee
@@ -16,7 +17,6 @@ func TestCompletedProductIsValid(t *testing.T) {
 		{name: "validity of valid product", emp: Employee(1), product: Product{Quantity: 1}, err: nil},
 	}
 	for _, tc := range testCases {
-
 
 		t.Run(tc.name, func(t *testing.T) {
 

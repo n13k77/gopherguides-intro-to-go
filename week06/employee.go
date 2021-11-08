@@ -7,7 +7,7 @@ type Employee int
 // A valid employee is greater than zero.
 //	valid: Employee(1)
 //	valid: Employee(2)
-//	invalid: Employee(0)
+//	invalid: Employee(0) 
 //	invalid: Employee(-1)
 func (e Employee) IsValid() error {
 	if e > 0 {
