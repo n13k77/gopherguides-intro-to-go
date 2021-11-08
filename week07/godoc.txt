@@ -1,0 +1,124 @@
+package week07 // import "github.com/gopherguides/willmark/_courses/intro-to-go/week07/assignment07/src"
+
+
+TYPES
+
+type CompletedProduct struct {
+	Product  Product  // Built Product
+	Employee Employee // Employee who built the product
+}
+    CompletedProduct represents a completed product
+
+func Run(ctx context.Context, count int, products ...*Product) ([]CompletedProduct, error)
+    snippet: example
+
+func (cp CompletedProduct) IsValid() error
+    IsValid returns true if the product has been built.
+
+type Employee int
+    Employee is a worker.
+
+func (e Employee) IsValid() error
+    IsValid returns an error if the employee is not valid. A valid employee is
+    greater than zero.
+
+        valid: Employee(1)
+        valid: Employee(2)
+        invalid: Employee(0)
+        invalid: Employee(-1)
+
+type ErrInvalidEmployee int
+    ErrInvalidEmployee is returned when the employee number is invalid.
+
+func (e ErrInvalidEmployee) Error() string
+
+type ErrInvalidEmployeeCount int
+    ErrInvalidEmployeeCount is returned when the employee count is invalid.
+
+func (e ErrInvalidEmployeeCount) Error() string
+
+type ErrInvalidQuantity int
+    ErrInvalidQuantity is returned when the product quantity is invalid.
+
+func (e ErrInvalidQuantity) Error() string
+
+type ErrManagerStopped struct{}
+
+func (ErrManagerStopped) Error() string
+
+type ErrProductNotBuilt string
+    ErrProductNotBuilt is returned when the product is not built.
+
+func (e ErrProductNotBuilt) Error() string
+
+type Manager struct {
+	// Has unexported fields.
+}
+    Manager is responsible for receiving product orders and assigning them to
+    employees. Manager is also responsible for receiving completed products, and
+    listening for errors, from employees. Manager takes products that have been
+    built by employees and returns them to the customer as a CompletedProduct.
+
+func NewManager() *Manager
+    NewManager will create a new Manager. This function should ALWAYS be used to
+    create a new Manager.
+
+func (m *Manager) Assign(products ...*Product) error
+    Assign will assign the given products to employees as employeess become
+    available. An invalid product will return an error.
+
+func (m *Manager) Complete(e Employee, p *Product) error
+    Complete will wrap the employee and the product into a CompletedProduct. The
+    will be passed down the Completed() channel as soon as a listener is
+    available to receive it. Complete will error if the employee is invalid or
+    if the product is not built.
+
+func (m *Manager) Completed() <-chan CompletedProduct
+    Completed will return a channel that can be listened to for
+    CompletedProducts. This is a read-only channel.
+
+func (m *Manager) Done() <-chan struct{}
+    Done will return a channel that will be closed when the manager has stopped.
+    Employees should listen to this channel to know when to stop listening for
+    jobs.
+
+func (m *Manager) Errors() chan error
+    Errors will return a channel that can be listened to and can be used to
+    receive errors from employees.
+
+func (m *Manager) Jobs() chan *Product
+    Jobs will return a channel that can be listened to for new products to be
+    built.
+
+func (m *Manager) Start(count int) error
+    Start will create new employees for the given count, and start listening for
+    jobs and errors. Managers should be stopped using the Stop method when they
+    are no longer needed.
+
+func (m *Manager) Stop()
+    Stop will stop the manager and clean up all resources.
+
+type Product struct {
+	Quantity int
+
+	// Has unexported fields.
+}
+    Product to be built by an employee
+
+func (p *Product) Build(e Employee) error
+    Build builds the product by the given employee. Returns an error if the
+    product has already been built. Returns an error if the employee ID <= 0.
+    Returns an error if the quantity <= 0.
+
+func (p Product) BuiltBy() Employee
+    BuiltBy returns the employee that built the product. A return value of "0"
+    means no employee has built the product yet.
+
+func (p Product) IsBuilt() error
+    IsBuilt returns an error if the product is not built, or if the product is
+    invalid.
+
+func (p Product) IsValid() error
+    IsValid returns an error if the product is invalid. A valid product has a
+    quantity > 0.
+
