@@ -43,8 +43,9 @@ func TestEmployeeWork(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			m := NewManager()
+			defer m.Stop()
+
 			emp := Employee(tc.id)
-	
 			go emp.work(m)
 
 			p := &Product{Quantity: 1} // valid product

@@ -20,7 +20,11 @@ func TestCompletedProductIsValid(t *testing.T) {
 
 		t.Run(tc.name, func(t *testing.T) {
 
-			_ = tc.product.Build(tc.emp)
+			err := tc.product.Build(tc.emp)
+
+			if err != tc.err {
+				t.Fatalf("unexpected error while building product, got %s", err)
+			}
 
 			cp := CompletedProduct{
 				Product: 	tc.product,

@@ -18,6 +18,8 @@ func TestManagerStart(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 
 			m := NewManager()
+			defer m.Stop()
+
 			act := m.Start(tc.emp)
 			exp := tc.err
 
@@ -68,6 +70,7 @@ func TestManagerAssign(t *testing.T) {
 
 			// start manager
 			m := NewManager()
+			defer m.Stop()
 
 			// cannot put this block inside the starting block because then 
 			// t.Fatalf would be called from inside a non-testing function
@@ -128,6 +131,8 @@ func TestManagerAssign(t *testing.T) {
 
 		// start manager
 		m := NewManager()
+		defer m.Stop()
+
 		err := m.Start(5)
 		if err != nil {
 			t.Fatalf("error starting manager during test: %s", err)
