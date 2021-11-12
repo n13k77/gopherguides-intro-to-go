@@ -1,6 +1,9 @@
 package week07
 
-import "context"
+import (
+	"context"
+	//"fmt"
+)
 
 // Manager is responsible for receiving product orders
 // and assigning them to employees. Manager is also responsible
@@ -144,19 +147,47 @@ func (m *Manager) Stop() {
 	close(m.quit)
 	close(m.jobs)
 	close(m.errs)
+
 }
 
-// snippet: example
 func Run(ctx context.Context, count int, products ...*Product) ([]CompletedProduct, error) {
-	// NOTE: this function should not be the one to create
-	// the necessary contexts, time outs, signals, etc.
-	// The Run method should not care about those concerns,
-	// only its own.
 
-	// TODO: implement this function
-	// This function should run the manager with the given products
-	// and return the results.
-	return nil, nil
+	m := NewManager()
+	defer m.Stop()
+
+	err := m.Start(count)
+	if err != nil {
+		return nil, err
+	}
+
+	go func(context.Context) {
+		err := m.Assign(products...)
+		if err != nil {
+			m.Errors() <- err
+		}
+	}(ctx)
+
+	var act []CompletedProduct
+
+	// start receiving, we need to listen on the completed channel otherwise it blocks.
+	// stop the manager when he has finished all products
+	go func() {
+		for product := range m.Completed() {
+			act = append(act, product)
+			if len(act) == len(products) {
+				m.Stop()
+			}
+		}
+	}()
+
+	select {
+	case err := <-m.Errors():
+		return nil, err
+	case <-m.Done():
+		return act, nil
+	case <-ctx.Done():
+		// context was cancelled during processing, so built products are discarded because
+		// it is highly unlikely everything is built the way it was requested
+		return nil, nil
+	}
 }
-
-// snippet: example
