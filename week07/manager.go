@@ -2,8 +2,10 @@ package week07
 
 import (
 	"context"
-	//"fmt"
+	"sync"
 )
+
+var managerMutex = sync.Mutex{}
 
 // Manager is responsible for receiving product orders
 // and assigning them to employees. Manager is also responsible
@@ -68,7 +70,9 @@ func (m *Manager) Assign(products ...*Product) error {
 
 		// assign product to employee
 		// this will block until an employee becomes available
+		managerMutex.Lock()
 		m.Jobs() <- p
+		managerMutex.Unlock()
 	}
 
 	return nil
@@ -98,7 +102,9 @@ func (m *Manager) Complete(e Employee, p *Product) error {
 	// Send completed product to Completed() channel
 	// for a listener to receive it.
 	// This will block until a listener is available.
+	managerMutex.Lock()
 	m.completedCh() <- cp
+	managerMutex.Unlock()
 
 	return nil
 }
@@ -141,13 +147,14 @@ func (m *Manager) Stop() {
 		return
 	}
 
+	managerMutex.Lock()
 	m.stopped = true
 
 	// close all channels
 	close(m.quit)
 	close(m.jobs)
 	close(m.errs)
-
+	managerMutex.Unlock()
 }
 
 func Run(ctx context.Context, count int, products ...*Product) ([]CompletedProduct, error) {
@@ -186,7 +193,7 @@ func Run(ctx context.Context, count int, products ...*Product) ([]CompletedProdu
 	case <-m.Done():
 		return act, nil
 	case <-ctx.Done():
-		// context was cancelled during processing, so built products are discarded because
+		// context was cancelled during processing; built products are discarded because
 		// it is highly unlikely everything is built the way it was requested
 		return nil, nil
 	}

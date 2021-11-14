@@ -241,7 +241,7 @@ func TestRunCancel(t *testing.T) {
 
 		// goroutine that will interrupt after 10 milliseconds (ctrl-c)
 		go func() {
-			time.Sleep(10 * time.Millisecond)
+			time.Sleep(100 * time.Millisecond)
 			t.Log("syscall triggered")
 			syscall.Kill(syscall.Getpid(), syscall.SIGINT)
 		}()
