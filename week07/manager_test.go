@@ -2,9 +2,9 @@ package week07
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"os/signal"
-	"syscall"
 	"testing"
 	"time"
 )
@@ -242,8 +242,17 @@ func TestRunCancel(t *testing.T) {
 		// goroutine that will interrupt after 10 milliseconds (ctrl-c)
 		go func() {
 			time.Sleep(100 * time.Millisecond)
-			t.Log("syscall triggered")
-			syscall.Kill(syscall.Getpid(), syscall.SIGINT)
+			// the call below causes issues on Windows. 
+			//syscall.Kill(syscall.Getpid(), syscall.SIGINT)
+			// replaced it with the construct below.
+			p, err := os.FindProcess(os.Getpid())
+
+			if err != nil {
+				// I'm very unsatisfied with the line below, but I do not know how to handle this properly
+				fmt.Println("error triggering interrupt")
+			}
+
+			p.Signal(os.Interrupt)
 		}()
 
 		// 1 piece of product takes 1 millisecond to be produced
@@ -269,9 +278,7 @@ func TestRunCancel(t *testing.T) {
 			return
 		}
 		
-		if err == context.DeadlineExceeded {
-			t.Fatal("unexpected error", err)
-		}
+		t.Fatal("unexpected error", err)
 	})
 }
 
