@@ -244,7 +244,7 @@ func TestRunCancel(t *testing.T) {
 			time.Sleep(100 * time.Millisecond)
 			// the call below causes issues on Windows. 
 			//syscall.Kill(syscall.Getpid(), syscall.SIGINT)
-			// replaced it with the construct below.
+			// replaced it with the construct below, but this also turned out not to be implemented on Windows.
 			p, err := os.FindProcess(os.Getpid())
 
 			if err != nil {
