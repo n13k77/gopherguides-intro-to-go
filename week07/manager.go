@@ -167,12 +167,12 @@ func Run(ctx context.Context, count int, products ...*Product) ([]CompletedProdu
 		return nil, err
 	}
 
-	go func(context.Context) {
+	go func() {
 		err := m.Assign(products...)
 		if err != nil {
 			m.Errors() <- err
 		}
-	}(ctx)
+	}()
 
 	var act []CompletedProduct
 
