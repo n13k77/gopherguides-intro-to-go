@@ -201,22 +201,24 @@ func TestRun(t *testing.T) {
 				t.Fatalf("unexpected error: expected %s, got %s", tc.err, err)
 			}
 
-			if err == nil {
-				// Check whether all products are completed
-				expLen := len(tc.products)
-				actLen := len(cps)
-				if actLen != expLen {
-					t.Fatalf("error: expected %d products, got %d", expLen, actLen)
-				}
-			
-				// Check whether all products are correct
-				for i := 0; i < len(cps); i++ {
-					act := cps[i].Product.Quantity
-					exp := tc.products[i].Quantity
+			if err == tc.err {
+				return
+			}
 
-					if exp != act {
-						t.Fatalf("expected product quantity %d, got %d", exp, act)
-					}
+			// Check whether all products are completed
+			expLen := len(tc.products)
+			actLen := len(cps)
+			if actLen != expLen {
+				t.Fatalf("error: expected %d products, got %d", expLen, actLen)
+			}
+		
+			// Check whether all products are correct
+			for i := 0; i < len(cps); i++ {
+				act := cps[i].Product.Quantity
+				exp := tc.products[i].Quantity
+
+				if exp != act {
+					t.Fatalf("expected product quantity %d, got %d", exp, act)
 				}
 			}
 		})
@@ -274,11 +276,9 @@ func TestRunCancel(t *testing.T) {
 		}
 		
 		err = ctx.Err()
-		if err == nil {
-			return
+		if err != nil {
+			t.Fatal("unexpected error", err)
 		}
-		
-		t.Fatal("unexpected error", err)
 	})
 }
 
