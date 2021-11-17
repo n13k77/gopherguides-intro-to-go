@@ -226,7 +226,7 @@ func TestRun(t *testing.T) {
 }
  
 func TestRunCancel(t *testing.T) {
-	//t.Parallel()
+	t.Skip()
 	tc := struct {
 		name	string
 	}{
