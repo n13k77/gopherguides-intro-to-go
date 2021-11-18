@@ -1,0 +1,10 @@
+DONE:
+errors_test.go
+warehouse_test.go
+
+TODO:
+completed_product_test.go
+employee_test.go
+manager_test.go
+material_test.go
+product_test.go
