@@ -22,16 +22,11 @@ func TestWarehouseRetrieve(t *testing.T) {
 		ctx := context.Background() 
 		ctx, cancel := context.WithCancel(ctx)
 		defer func(){
-			t.Log("cleaning up context")
 			w.Stop()
 			cancel()
 		}()
 
-		t.Log("start warehouse")
-
-		// TODO
-		// I do not get what I could do with the returned context
-		_ = w.Start(ctx)
+		ctx = w.Start(ctx)
 
 		m, err := w.Retrieve(tc.m, tc.q)
 		if err != nil {
