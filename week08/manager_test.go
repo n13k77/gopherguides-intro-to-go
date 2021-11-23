@@ -61,7 +61,7 @@ func TestManagerAssignStopped(t *testing.T) {
 		ctx := context.Background()
 		ctx, cancel := context.WithCancel(ctx)
 
-		ctx, err := m.Start(ctx, 1)
+		_, err := m.Start(ctx, 1)
 
 		defer func() {
 			m.Stop()

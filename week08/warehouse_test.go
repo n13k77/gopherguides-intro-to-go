@@ -26,7 +26,7 @@ func TestWarehouseRetrieve(t *testing.T) {
 			cancel()
 		}()
 
-		ctx = w.Start(ctx)
+		_ = w.Start(ctx)
 
 		m, err := w.Retrieve(tc.m, tc.q)
 		if err != nil {
