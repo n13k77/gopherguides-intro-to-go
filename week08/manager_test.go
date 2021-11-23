@@ -59,9 +59,14 @@ func TestManagerAssignStopped(t *testing.T) {
 		m := &Manager{}
 
 		ctx := context.Background()
-		ctx, _ = context.WithCancel(ctx)
+		ctx, cancel := context.WithCancel(ctx)
 
 		ctx, err := m.Start(ctx, 1)
+
+		defer func() {
+			m.Stop()
+			cancel()
+		}()
 
 		if err != nil {
 			t.Fatalf("error starting manager during test")

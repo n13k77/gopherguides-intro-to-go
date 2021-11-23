@@ -2,6 +2,7 @@ package week08
 
 import (
 	"context"
+	"sync"
 	"time"
 )
 
@@ -11,17 +12,24 @@ type Warehouse struct {
 	cancel    context.CancelFunc // cancels the warehouse
 	cap       int                // capacity of the warehouse
 	materials Materials          // materials in the warehouse
+	sync.RWMutex
 }
 
 // Start the warehouse
 func (w *Warehouse) Start(ctx context.Context) context.Context {
+	w.Lock()
 	ctx, w.cancel = context.WithCancel(ctx)
+	w.Unlock()
 	return ctx
 }
 
 // Stop the warehouse
 func (w *Warehouse) Stop() {
-	w.cancel()
+	w.RLock()
+	if w.cancel != nil {
+		w.cancel()
+	}
+	w.RUnlock()
 }
 
 // Retrieve quantity of material from the warehouse
@@ -32,7 +40,10 @@ func (w *Warehouse) Retrieve(m Material, q int) (Material, error) {
 	<-ctx.Done()
 
 	// remove the materials from the warehouse
+
+	w.Lock()
 	w.materials[m] -= q
+	w.Unlock()
 
 	return m, nil
 }
@@ -47,16 +58,18 @@ func (w *Warehouse) fill(m Material) context.Context {
 	go func() {
 		defer cancel()
 
-		if w.cap <= 0 {
-			w.cap = 10
-		}
-
-		if w.materials == nil {
-			w.materials = Materials{}
-		}
-
+		w.RLock()
 		cap := w.cap
 		mats := w.materials
+		w.RUnlock()
+		
+		if cap <= 0 {
+			cap = 10
+		}
+
+		if mats == nil {
+			mats = Materials{}
+		}
 
 		// until the warehouse is full of
 		// the material create the material and
@@ -67,6 +80,13 @@ func (w *Warehouse) fill(m Material) context.Context {
 			mats[m]++
 			q = mats[m]
 		}
+
+		// This part I only figured out because of the help in class
+		// In class, cap was not set for warehouse, isn't that necessary?
+		w.Lock()
+		w.cap = cap
+		w.materials = mats
+		w.Unlock()
 	}()
 
 
