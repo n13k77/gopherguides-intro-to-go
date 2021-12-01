@@ -39,18 +39,34 @@ func TestArticle(t *testing.T) {
 	})
 }
 
-// TODO: Implement test function for article JSON marshalling / unmarshalling
-// func TestArticleMarshallJson(t *testing.T) {
-// 	testCases := []struct {
-// 		desc	string
-// 	}{
-// 		{
-// 			desc: "test json marshalling for article",
-// 		},
-// 	}
-// 	for _, tC := range testCases {
-// 		t.Run(tC.desc, func(t *testing.T) {
+func TestArticleMarshallJson(t *testing.T) {
+	tc := struct {
+		name     string
+		id       int
+		title    string
+		category string
+		content  string
+		result 	 string
+	}{
+		name:     "test article struct",
+		id:       12345,
+		title:    "test title",
+		category: "test category",
+		content:  "test content",
+		result:   "{\"Id\":12345,\"Category\":\"test category\",\"Content\":\"test content\",\"Title\":\"test title\"}",
+	}
+	t.Run(tc.name, func(t *testing.T) {
+		a := Article{tc.id, tc.category, tc.content, tc.title}
+		json, err := a.MarshallJSON()
+		if err != nil {
+			t.Fatalf("unexpected error occurred, got %s", err)
+		}
+		
+		act := string(json)
+		exp := tc.result
 
-// 		})
-// 	}
-// }
+		if exp != act {
+			t.Fatalf("expected %s, got %s", exp, act)
+		}
+	})
+}

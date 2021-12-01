@@ -1,79 +1,82 @@
 package news
 
 import (
+	"encoding/json"
+	"fmt"
 	"os"
 	"sync"
 )
 
 // type Publisher publishes news articles to which can be subscribed
 type Publisher struct {
+	config 		PublisherConfig
 	mutex  		sync.RWMutex
 	subs   		map[string]map[int]chan Article
 	stopped		bool
-	backupfile 	*os.File
-	publishfile	*os.File // this is part of optional functionality, check for nil before using
-	jsonformat	bool
+	articles	map[int]Article
+}
+
+type PublisherState struct {
+	Config 		PublisherConfig
+	Categories 	[]string
+	Stopped 	bool
+	Articles	map[int]Article
 }
 
 type PublisherConfig struct {
-	backupfile	string
-	publishfile	string
-	jsonformat	bool
+	Backupfile 	string
+	Publishfile string
+	Jsonformat  bool
 }
 
-// func NewPublisher() creates a new instance of a Publisher
-func NewPublisher(config PublisherConfig) (*Publisher, error) {
-	var err error
 
+// func NewPublisher() creates a new instance of a Publisher
+func NewPublisher(config PublisherConfig) (*Publisher) {
+	// TODO error handling
 	p := &Publisher{}
+
 	p.subs = make(map[string]map[int]chan Article)
 	p.stopped = false
+	p.articles = make(map[int]Article)
 
 	// if not specified, set backupfile to a default location
-	if config.backupfile == "" {
-		config.backupfile = "./tmp.txt"
+	if config.Backupfile == "" {
+		config.Backupfile = "./backup.tmp"
 	}
-
-	// check writability of file locations
-    p.backupfile, err = os.Create(config.backupfile)
-    if err != nil {
-        return nil, err
-    }
-
-	if config.publishfile != "" {
-		p.jsonformat = config.jsonformat
-		p.publishfile, err = os.Create(config.publishfile)
-	}
-
-	if err != nil {
-        return nil, err
-    }
-
-    defer func() {
-        if err := p.backupfile.Close(); err != nil {
-            panic(err)
-        }
-    }()
-
-	return p, nil
+    
+	p.config = config
+	
+	return p
 }
 
 // func Subscribe() adds a subscriber to a publisher. The subscriber has to
 // provide the topic to which it is subscribing and its unique identifier
-func (p *Publisher) Subscribe(id int, categories ...string) (<-chan Article, error) {
+func (p *Publisher) Subscribe(id int, category string) (<-chan Article, error) {
+	// TODO error handling
 	p.mutex.Lock()
 	defer p.mutex.Unlock()
 
 	ch := make(chan Article, 1)
 
-	for _, category := range categories {
+	if _, exists := p.subs[category][id]; exists {
+		// already subscribed, silently ignore. 
+		return nil, nil 
+	}
+
+	if _, exists := p.subs[category]; exists {
+		// The category exists for this publisher
+		p.subs[category][id] = ch
+	} else {
+		// The category does not exist for this publisher, first initialize map
+		fmt.Println("category does not exists")
+		p.subs[category] = make(map[int]chan Article)
 		p.subs[category][id] = ch
 	}
 	return ch, nil
 }
 
 // func Unsubscriber() removes a subscriber from a publisher. The subscriber has to
-// provide the topic from which it is unsubscribing and its unique identifier
+// provide the topic from which it is unsubscribing and its own unique identifier
 func (p *Publisher) Unsubscribe(id int, categories ...string) {
 	p.mutex.Lock()
 	defer p.mutex.Unlock()
@@ -82,15 +85,12 @@ func (p *Publisher) Unsubscribe(id int, categories ...string) {
 
 	// if no categories are provided, remove all subscriptions for this subscriber
 	if len(cats) == 0 {
-		i := 0
-		for k := range(p.subs) {
-			cats[i] = k
-			i++
-		}
+		cats = p.Categories()
 	}
 
+	// TODO: how does the deletion from an unsubscribed channel work? Should NOT throw an error
 	for _, cat := range cats {
-		delete(p.subs[cat], id) // TODO: test for deletion in unsubscribed channel
+		delete(p.subs[cat], id) 
 	}
 }
 
@@ -107,21 +107,27 @@ func (p *Publisher) Publish(a Article) {
 	for subs := range p.subs[a.category] {
 		p.subs[a.category][subs] <- a
 	}
+
+	// add it to the publisher archive
+	p.articles[a.id] = a
 }
 
-// func Close closes the publisher 
-func (p *Publisher) Close() {
+// func Stop stops the publisher 
+func (p *Publisher) Stop() {
 	p.mutex.Lock()
-	defer p.mutex.Unlock()
-
+	
 	if !p.stopped {
 		p.stopped = true
 		for _, subs := range p.subs {
 			for _, ch := range subs {
+				// TODO: cancel subscribers as well
 				close(ch)
 			}
 		}
 	}
+	
+	p.mutex.Unlock()
+	p.Save()
 }
 
 func (p *Publisher) Stopped() bool {
@@ -129,6 +135,43 @@ func (p *Publisher) Stopped() bool {
 }
 
 // func Save saves the state of the publisher to the configured saving location 
-func (p *Publisher) Save() {
-	//TODO
+func (p *Publisher) Save() error {
+	p.mutex.RLock()
+	defer p.mutex.RUnlock()
+	
+	pc := PublisherState {
+		Config: p.config,
+		Articles: p.articles,
+	}
+
+	// fill the array with topics, save the topics since they are part of the state
+	pc.Categories = p.Categories()
+
+	// convert the config to json
+	data, err := json.Marshal(pc)
+
+	if err != nil {
+		return err
+	}
+	
+	err = os.WriteFile(pc.Config.Backupfile, data, 0644);
+
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
+
+
+func (p *Publisher) Categories () []string {
+
+	a := make([]string, 0, len(p.subs))
+	
+	for k, _ := range p.subs {
+		a = append(a, k)
+	}
+
+	return a
+}
+
