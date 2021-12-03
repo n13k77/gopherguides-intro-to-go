@@ -1,8 +1,7 @@
 package news
 
 import (
-	"fmt"
-	"time"
+	"log"
 )
 
 type Source interface {
@@ -17,6 +16,7 @@ type RandomSource struct {
 }
 
 func NewRandomSource() *RandomSource {
+	log.Println("sources newrandomsource")
 	return &RandomSource {
 		ch: make(chan Article),
 		articles: []Article{
@@ -32,19 +32,20 @@ func NewRandomSource() *RandomSource {
 }
 
 func (rs *RandomSource) GetSourceChannel() chan Article {
+	log.Println("sources getsourcechannel")
 	return rs.ch
 }
 
 func (rs *RandomSource) Publish() error {
+	log.Println("sources publish")
 	for _, a := range rs.articles {
-		fmt.Println(a.String())
 		rs.ch <- a
-		time.Sleep(1 * time.Second)
-	}
+		}
 	return nil 
 }
 
 func (rs *RandomSource) Stop() error {
+	log.Println("sources stop")
 	close(rs.ch)
 	return nil
 }

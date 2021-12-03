@@ -74,7 +74,7 @@ func TestSubscriberArticleReceive(t *testing.T) {
 		src := NewRandomSource()
 		
 		p.AddSource(src)
-
+		
 		defer func() {
 			sub.Unsubscribe(p)
 			src.Stop()
@@ -83,7 +83,6 @@ func TestSubscriberArticleReceive(t *testing.T) {
 
 		sub.Subscribe(p, "World")
 		sub.Subscribe(p, "Economics")
-
 		src.Publish()
 	})
 }

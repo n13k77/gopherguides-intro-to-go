@@ -2,7 +2,7 @@ package news
 
 import (
 	"encoding/json"
-	"fmt"
+	"log"
 	"os"
 	"strings"
 	"sync"
@@ -34,6 +34,7 @@ type PublisherConfig struct {
 
 // func NewPublisher() creates a new instance of a Publisher
 func NewPublisher(config PublisherConfig) (*Publisher) {
+	log.Println("publisher new publisher")
 	// TODO error handling
 	p := &Publisher{}
 
@@ -47,13 +48,14 @@ func NewPublisher(config PublisherConfig) (*Publisher) {
 	}
     
 	p.config = config
-	
+
 	return p
 }
 
 // func Subscribe() adds a subscriber to a publisher. The subscriber has to
 // provide the topic to which it is subscribing and its unique identifier
 func (p *Publisher) Subscribe(id int, category string) (chan Article, error) {
+	log.Println("publisher subscribe")
 	// TODO error handling
 	p.mutex.Lock()
 	defer p.mutex.Unlock()
@@ -72,16 +74,20 @@ func (p *Publisher) Subscribe(id int, category string) (chan Article, error) {
 		p.subs[lc][id] = ch
 	} else {
 		// The category does not exist for this publisher, first initialize map
-		fmt.Println("category does not exists")
+		log.Println("category does not exist, create category")
 		p.subs[lc] = make(map[int]chan Article)
+		log.Println("category does not exist, create subscription")
 		p.subs[lc][id] = ch
 	}
 	return ch, nil
 }
 
-// func Unsubscriber() removes a subscriber from a publisher. The subscriber has to
-// provide the topic from which it is unsubscribing and its own unique identifier
+// func Unsubscribe() removes a subscriber from a publisher. The subscriber has to
+// provide its own unique identifier and the categories from which it is unsubscribing
+// If no categories are provided, all subscriptions will be removed, and the channels 
+// closed
 func (p *Publisher) Unsubscribe(id int, categories ...string) {
+	log.Printf("publisher unsubscribe %d\n", id)
 	p.mutex.Lock()
 	defer p.mutex.Unlock()
 
@@ -94,8 +100,14 @@ func (p *Publisher) Unsubscribe(id int, categories ...string) {
 
 	// TODO: how does the deletion from an unsubscribed channel work? Should NOT throw an error
 	for _, cat := range cats {
-		close(p.subs[cat][id])
-		delete(p.subs[cat], id) 
+		log.Printf("publisher unsubscribe category %s", cat)
+
+		lc := strings.ToLower(cat)
+		if _, ok := p.subs[lc][id]; ok {
+			log.Printf("publisher remove subscriber %d from category %s", id, lc)
+			close(p.subs[cat][id])
+			delete(p.subs[cat], id) 
+		} 
 	}
 }
 
@@ -103,30 +115,32 @@ func (p *Publisher) Unsubscribe(id int, categories ...string) {
 // TODO: as soon as a source publishes an article that has a previously unseen topic
 // that topic should be added to the news publisher. 
 func (p *Publisher) AddSource(s Source) {
+	log.Println("publisher add source")
 	p.mutex.Lock()
-	defer p.mutex.Unlock()
 	p.src = append(p.src, s.GetSourceChannel())
-}
+	defer p.mutex.Unlock()
 
-// func Publish publishes an article to the subscribers subscribed to that particular topic
-func (p *Publisher) Publish(a Article) {
-	p.mutex.RLock()
-	defer p.mutex.RUnlock()
-
-	if p.stopped {
-		return
-	}
-
-	for subs := range p.subs[a.category] {
-		p.subs[a.category][subs] <- a
-	}
-
-	// add it to the publisher archive
-	p.articles[a.id] = a
+	go func() {
+		// here we need to wait until all is received, so a loop is put in place
+		for a := range s.GetSourceChannel() {
+			log.Println("publisher add source start listening")
+			lc := strings.ToLower(a.Category())
+			if _, ok := p.subs[lc]; ok {
+				log.Println("publisher add source publish existing category")
+				for _, ch := range p.subs[lc] {
+					ch<- a
+				}
+			} else {
+				log.Println("publisher add source publish new category")
+				p.subs[lc] = make(map[int]chan Article)
+			}
+		}
+	}()
 }
 
 // func Stop stops the publisher 
 func (p *Publisher) Stop() {
+	log.Println("publisher stop")
 	p.mutex.Lock()
 	
 	if !p.stopped {

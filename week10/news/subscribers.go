@@ -1,7 +1,7 @@
 package news
 
 import (
-	"fmt"
+	"log"
 	"strings"
 	"time"
 )
@@ -12,19 +12,10 @@ type Subscriber struct {
 }
 
 func NewSubscriber () *Subscriber {
+	log.Println("subscriber newsubscriber")
 	s := &Subscriber{
 		id:		int(time.Now().UnixMicro()), // unique ID for subscriber
 		subs:	make(map[string]chan Article),
-	}
-
-	for t, ch := range s.subs {
-		// fmt.Println(t)
-		go func(k string, c chan Article) {
-			fmt.Printf("start receiving for %s\n", k)
-		  	for art := range c {
-				fmt.Println(art.String())
-		 	}
-		}(t, ch)
 	}
 	return s
 }
@@ -36,31 +27,28 @@ func (s *Subscriber) Subscribe (p *Publisher, categories ...string) error {
 		if err != nil {
 			return err
 		}
+		log.Printf("subscriber subscribe %s", strings.ToLower(category))
 		s.subs[strings.ToLower(category)] = ch
+
+		go func() {
+			for a := range ch {
+			log.Printf("subscriber subcribe recieved article %d", a.ID())
+			}
+		}()
+
 	}
 	return nil
 }
 
 func (s *Subscriber) Unsubscribe (p *Publisher, categories ...string) error {
+	log.Println("subscriber unsubscribe")
 	// TODO error handling
 	p.Unsubscribe(s.id, categories...)
 	return nil
 }
 
-// func (s *Subscriber) Receive() {
-// 	for t, ch := range s.subs {
-// 		// fmt.Println(t)
-// 		go func(k string, c chan Article) {
-// 			fmt.Printf("start receiving for %s\n", k)
-// 		  	for art := range c {
-// 				fmt.Println(art.String())
-// 		 	}
-// 		}(t, ch)
-// 	}
-// }
-
 func (s *Subscriber) Subscriptions () []string {
-
+	log.Println("subscriber subscriptions")
 	a := make([]string, 0, len(s.subs))
 
 	for k := range s.subs {
