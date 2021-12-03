@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strings"
 	"sync"
 )
 
@@ -12,6 +13,7 @@ type Publisher struct {
 	config 		PublisherConfig
 	mutex  		sync.RWMutex
 	subs   		map[string]map[int]chan Article
+	src   		[]chan Article
 	stopped		bool
 	articles	map[int]Article
 }
@@ -51,26 +53,28 @@ func NewPublisher(config PublisherConfig) (*Publisher) {
 
 // func Subscribe() adds a subscriber to a publisher. The subscriber has to
 // provide the topic to which it is subscribing and its unique identifier
-func (p *Publisher) Subscribe(id int, category string) (<-chan Article, error) {
+func (p *Publisher) Subscribe(id int, category string) (chan Article, error) {
 	// TODO error handling
 	p.mutex.Lock()
 	defer p.mutex.Unlock()
 
-	ch := make(chan Article, 1)
+	ch := make(chan Article)
+	// use lowercase for category, avoid that SpoRtS and sports are different categories
+	lc := strings.ToLower(category)	
 
-	if _, exists := p.subs[category][id]; exists {
+	if _, exists := p.subs[lc][id]; exists {
 		// already subscribed, silently ignore. 
 		return nil, nil 
 	}
 
-	if _, exists := p.subs[category]; exists {
+	if _, exists := p.subs[lc]; exists {
 		// The category exists for this publisher
-		p.subs[category][id] = ch
+		p.subs[lc][id] = ch
 	} else {
 		// The category does not exist for this publisher, first initialize map
 		fmt.Println("category does not exists")
-		p.subs[category] = make(map[int]chan Article)
-		p.subs[category][id] = ch
+		p.subs[lc] = make(map[int]chan Article)
+		p.subs[lc][id] = ch
 	}
 	return ch, nil
 }
@@ -90,12 +94,21 @@ func (p *Publisher) Unsubscribe(id int, categories ...string) {
 
 	// TODO: how does the deletion from an unsubscribed channel work? Should NOT throw an error
 	for _, cat := range cats {
+		close(p.subs[cat][id])
 		delete(p.subs[cat], id) 
 	}
 }
 
-// func Publish publishes an article to the subscribers subscribed to that 
-// particular topic
+// func AddSource() adds a news source to the publisher
+// TODO: as soon as a source publishes an article that has a previously unseen topic
+// that topic should be added to the news publisher. 
+func (p *Publisher) AddSource(s Source) {
+	p.mutex.Lock()
+	defer p.mutex.Unlock()
+	p.src = append(p.src, s.GetSourceChannel())
+}
+
+// func Publish publishes an article to the subscribers subscribed to that particular topic
 func (p *Publisher) Publish(a Article) {
 	p.mutex.RLock()
 	defer p.mutex.RUnlock()
@@ -163,12 +176,12 @@ func (p *Publisher) Save() error {
 	return nil
 }
 
-
+// func Categories returns all categories for which the publisher is publishing news
 func (p *Publisher) Categories () []string {
 
 	a := make([]string, 0, len(p.subs))
 	
-	for k, _ := range p.subs {
+	for k := range p.subs {
 		a = append(a, k)
 	}
 

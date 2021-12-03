@@ -20,9 +20,8 @@ func TestSavePublisher(t *testing.T) {
 	testCases := []struct {
 		desc	string
 		config  *PublisherConfig
-		err 	error
 	}{
-		{desc: "save publisher, correct path", config: createConfig(t, "./test.txt", "./test.out"), err: nil},
+		{desc: "save publisher, correct path", config: createConfig(t, "./test.txt", "./test.out")},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
@@ -48,3 +47,29 @@ func TestSavePublisher(t *testing.T) {
 	}
 }
 
+// func TestRandomSourceToSubscriber(t *testing.T) {
+// 	tc := struct {
+// 		desc	string
+// 		config  *PublisherConfig
+// 	}{
+// 		desc: "test random publishing source", 
+// 		config: createConfig(t, "./test.txt", "./test.out"),	
+// 	}
+// 	t.Run(tc.desc, func(t *testing.T) {
+// 		p := NewPublisher(*tc.config)
+// 		rs := NewRandomSource()	
+// 		p.AddSource(rs)	
+// 		rs.Publish()
+// 		art := []Article{}
+
+// 		go func() {
+// 			for rcv := range rs.ch {
+// 				art = append(art, rcv)
+// 				if len(art) == 2 {
+// 					rs.Stop()
+// 				}
+// 			}
+// 		}()
+// 		rs.Publish()
+// 	})
+// }
