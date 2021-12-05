@@ -2,7 +2,6 @@ package news
 
 import (
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
@@ -134,9 +133,6 @@ func (p *Publisher) Save() error {
 		return err
 	}
 	
-	fmt.Println(p.articles)
-	fmt.Println(ps.Articles)
-	fmt.Println(string(data))
 
 	err = os.WriteFile(ps.Config.Backupfile, data, 0644);
 
