@@ -16,7 +16,7 @@ func createConfig(t testing.TB, backupfile string, publishfile string) *Publishe
 	}
 }
 
-func TestPublisherStart(t *testing.T) {
+func TestPublisherNew(t *testing.T) {
 	testCases := []struct {
 		desc	string
 		config  *PublisherConfig
@@ -26,10 +26,10 @@ func TestPublisherStart(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
 
-			p, err := Start("./test.txt")
+			p := NewPublisher(*tc.config)
 
-			if err != nil || p.stopped != false {
-				t.Fatalf("error starting publisher")
+			if p.Stopped() {
+				t.Fatalf("error starting publisher, publisher stopped")
 			}
 
 			// if a Publisher is created during the test run, clean it up
