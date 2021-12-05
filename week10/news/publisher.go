@@ -13,7 +13,7 @@ type Publisher struct {
 	config 		PublisherConfig
 	mutex  		sync.RWMutex
 	subs   		map[string]map[int]chan Article
-	src   		[]chan Article
+	src   		[]<-chan Article
 	stopped		bool
 	articles	[]Article
 }
@@ -52,7 +52,7 @@ func NewPublisher(config PublisherConfig) (*Publisher) {
 
 // func Subscribe() adds a subscriber to a publisher. The subscriber has to
 // provide the topic to which it is subscribing and its unique identifier
-func (p *Publisher) Subscribe(id int, category string) (chan Article, error) {
+func (p *Publisher) Subscribe(id int, category string) (<-chan Article, error) {
 	log.Println("publisher subscribe")
 	// this is quite a broad lock, a lock with smaller scope did not function
 	p.mutex.Lock()
@@ -81,9 +81,12 @@ func (p *Publisher) Subscribe(id int, category string) (chan Article, error) {
 }
 
 // func Unsubscribe() removes a subscriber from a publisher. The subscriber has to
-// provide its own unique identifier and the categories from which it is unsubscribing
+// provide its own unique identifier and the categories from which it is unsubscribing.
 // If no categories are provided, all subscriptions will be removed, and the channels 
-// closed
+// closed.
+// If a subscriber wants to unsubscribe from a channel it was not subscribed to,
+// no explicit error will be thrown because the end situation matches the desired
+// situation.
 func (p *Publisher) Unsubscribe(id int, categories ...string) {
 	log.Printf("publisher unsubscribe %d\n", id)
 
@@ -113,7 +116,7 @@ func (p *Publisher) Unsubscribe(id int, categories ...string) {
 }
 
 // func AddSource() adds a news source to the publisher
-func (p *Publisher) AddSource(s Source) {
+func (p *Publisher) DistributeSource(s Source) {
 	log.Println("publisher add source")
 
 	p.mutex.Lock()

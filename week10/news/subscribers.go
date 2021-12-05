@@ -8,14 +8,14 @@ import (
 
 type Subscriber struct {
 	id 		int
-	subs 	map[string]chan Article 	// save the combination of topic and channel
+	subs 	map[string]<-chan Article 	// save the combination of topic and channel
 }
 
 func NewSubscriber () *Subscriber {
 	log.Println("subscriber newsubscriber")
 	s := &Subscriber{
 		id:		int(time.Now().UnixNano()), // unique ID for subscriber
-		subs:	make(map[string]chan Article),
+		subs:	make(map[string]<-chan Article),
 	}
 	return s
 }

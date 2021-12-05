@@ -111,7 +111,7 @@ func TestSubscriberArticleReceive(t *testing.T) {
 		sub2 := NewSubscriber()
 		src := NewRandomSource()
 		
-		p.AddSource(src)
+		p.DistributeSource(src)
 		
 		defer func() {
 			sub1.Unsubscribe(p)

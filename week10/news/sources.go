@@ -5,9 +5,9 @@ import (
 )
 
 type Source interface {
-	GetSourceChannel() (chan Article)
-	Publish() error
-	Stop() error
+	GetSourceChannel() (<-chan Article)
+	Publish() // error?
+	Stop() // error?
 }
 
 type RandomSource struct {
@@ -31,21 +31,19 @@ func NewRandomSource() *RandomSource {
 	}
 }
 
-func (rs *RandomSource) GetSourceChannel() chan Article {
+func (rs *RandomSource) GetSourceChannel() <-chan Article {
 	log.Println("sources getsourcechannel")
 	return rs.ch
 }
 
-func (rs *RandomSource) Publish() error {
+func (rs *RandomSource) Publish() {
 	log.Println("sources publish")
 	for _, a := range rs.articles {
 		rs.ch <- a
 		}
-	return nil 
 }
 
-func (rs *RandomSource) Stop() error {
+func (rs *RandomSource) Stop() {
 	log.Println("sources stop")
 	close(rs.ch)
-	return nil
 }
