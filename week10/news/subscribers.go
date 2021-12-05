@@ -14,14 +14,13 @@ type Subscriber struct {
 func NewSubscriber () *Subscriber {
 	log.Println("subscriber newsubscriber")
 	s := &Subscriber{
-		id:		int(time.Now().UnixMicro()), // unique ID for subscriber
+		id:		int(time.Now().UnixNano()), // unique ID for subscriber
 		subs:	make(map[string]chan Article),
 	}
 	return s
 }
 
 func (s *Subscriber) Subscribe (p *Publisher, categories ...string) error {
-	// TODO error handling
 	for _, category := range categories {
 		ch, err := p.Subscribe(s.id, category)
 		if err != nil {
@@ -42,7 +41,6 @@ func (s *Subscriber) Subscribe (p *Publisher, categories ...string) error {
 
 func (s *Subscriber) Unsubscribe (p *Publisher, categories ...string) error {
 	log.Println("subscriber unsubscribe")
-	// TODO error handling
 	p.Unsubscribe(s.id, categories...)
 	return nil
 }

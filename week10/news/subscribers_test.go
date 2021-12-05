@@ -59,6 +59,43 @@ func TestSubscriber(t *testing.T) {
 	})
 }
 
+func TestSubscriberDoubleSubscription(t *testing.T) {
+	tc := struct {
+		desc	string
+		config 	*PublisherConfig
+	}{
+		desc: "test double subscription", 
+		config: createConfig(t, "./test.txt", "./test.out"),
+	}
+	t.Run(tc.desc, func(t *testing.T) {
+		
+		p := NewPublisher(*tc.config)
+		s := NewSubscriber()
+
+		defer func() {
+			s.Unsubscribe(p)
+			p.Stop()
+		}()
+
+		err := s.Subscribe(p, "EcoNoMicS")
+
+		if err != nil {
+			t.Fatalf("unexpected error setting up test %s", tc.desc)
+		}
+
+		act := s.Subscribe(p, "economics")
+		exp := ErrAlreadySubscribed("economics")
+
+		if exp != act {
+			t.Fatalf("expected %s, got %s", exp, act)
+		}
+
+	})
+}
+
+// for properly testing the subscriber receiver functionality, the whole chain of 
+// source -> publisher -> subscriber is created here. So this ends up being more 
+// of an integration test. 
 func TestSubscriberArticleReceive(t *testing.T) {
 	tc := struct {
 		desc	string
@@ -70,19 +107,22 @@ func TestSubscriberArticleReceive(t *testing.T) {
 	t.Run(tc.desc, func(t *testing.T) {
 
 		p := NewPublisher(*tc.config)
-		sub := NewSubscriber()
+		sub1 := NewSubscriber()
+		sub2 := NewSubscriber()
 		src := NewRandomSource()
 		
 		p.AddSource(src)
 		
 		defer func() {
-			sub.Unsubscribe(p)
+			sub1.Unsubscribe(p)
+			sub2.Unsubscribe(p)
 			src.Stop()
 			p.Stop()
 		}()
 
-		sub.Subscribe(p, "World")
-		sub.Subscribe(p, "Economics")
+		sub1.Subscribe(p, "World")
+		sub1.Subscribe(p, "Economics")
+		sub2.Subscribe(p, "cooking")
 		src.Publish()
 	})
 }

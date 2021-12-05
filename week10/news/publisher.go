@@ -15,14 +15,14 @@ type Publisher struct {
 	subs   		map[string]map[int]chan Article
 	src   		[]chan Article
 	stopped		bool
-	articles	map[int]Article
+	articles	[]Article
 }
 
 type PublisherState struct {
 	Config 		PublisherConfig
 	Categories 	[]string
 	Stopped 	bool
-	Articles	map[int]Article
+	Articles	[]Article
 }
 
 type PublisherConfig struct {
@@ -35,12 +35,10 @@ type PublisherConfig struct {
 // func NewPublisher() creates a new instance of a Publisher
 func NewPublisher(config PublisherConfig) (*Publisher) {
 	log.Println("publisher new publisher")
-	// TODO error handling
 	p := &Publisher{}
 
 	p.subs = make(map[string]map[int]chan Article)
 	p.stopped = false
-	p.articles = make(map[int]Article)
 
 	// if not specified, set backupfile to a default location
 	if config.Backupfile == "" {
@@ -56,17 +54,17 @@ func NewPublisher(config PublisherConfig) (*Publisher) {
 // provide the topic to which it is subscribing and its unique identifier
 func (p *Publisher) Subscribe(id int, category string) (chan Article, error) {
 	log.Println("publisher subscribe")
-	// TODO error handling
+	// this is quite a broad lock, a lock with smaller scope did not function
 	p.mutex.Lock()
 	defer p.mutex.Unlock()
 
 	ch := make(chan Article)
-	// use lowercase for category, avoid that SpoRtS and sports are different categories
+	// use lowercase for category, prevent that SpoRtS and sports are different categories
 	lc := strings.ToLower(category)	
 
 	if _, exists := p.subs[lc][id]; exists {
-		// already subscribed, silently ignore. 
-		return nil, nil 
+		// already subscribed, return error. 
+		return nil, ErrAlreadySubscribed(lc) 
 	}
 
 	if _, exists := p.subs[lc]; exists {
@@ -88,8 +86,6 @@ func (p *Publisher) Subscribe(id int, category string) (chan Article, error) {
 // closed
 func (p *Publisher) Unsubscribe(id int, categories ...string) {
 	log.Printf("publisher unsubscribe %d\n", id)
-	p.mutex.Lock()
-	defer p.mutex.Unlock()
 
 	cats := categories
 
@@ -98,41 +94,56 @@ func (p *Publisher) Unsubscribe(id int, categories ...string) {
 		cats = p.Categories()
 	}
 
-	// TODO: how does the deletion from an unsubscribed channel work? Should NOT throw an error
 	for _, cat := range cats {
 		log.Printf("publisher unsubscribe category %s", cat)
 
 		lc := strings.ToLower(cat)
+		
+		// remove subscriber from category if it was subcribed
 		if _, ok := p.subs[lc][id]; ok {
 			log.Printf("publisher remove subscriber %d from category %s", id, lc)
+			p.mutex.Lock()
+			// close subscriber channel
 			close(p.subs[cat][id])
+			// remove subscriber from category map
 			delete(p.subs[cat], id) 
+			p.mutex.Unlock()
 		} 
 	}
 }
 
 // func AddSource() adds a news source to the publisher
-// TODO: as soon as a source publishes an article that has a previously unseen topic
-// that topic should be added to the news publisher. 
 func (p *Publisher) AddSource(s Source) {
 	log.Println("publisher add source")
+
 	p.mutex.Lock()
 	p.src = append(p.src, s.GetSourceChannel())
-	defer p.mutex.Unlock()
+	p.mutex.Unlock()
 
 	go func() {
-		// here we need to wait until all is received, so a loop is put in place
+		// start listening to articles that are published by the source
 		for a := range s.GetSourceChannel() {
 			log.Println("publisher add source start listening")
+
+			// add the received article to the archive 
+			p.mutex.Lock()
+			a.id = len(p.articles)// + 1
+			p.articles = append(p.articles, a)
+			p.mutex.Unlock()
+
 			lc := strings.ToLower(a.Category())
 			if _, ok := p.subs[lc]; ok {
 				log.Println("publisher add source publish existing category")
+				p.mutex.RLock()
 				for _, ch := range p.subs[lc] {
 					ch<- a
 				}
+				p.mutex.RUnlock()
 			} else {
 				log.Println("publisher add source publish new category")
+				p.mutex.Lock()
 				p.subs[lc] = make(map[int]chan Article)
+				p.mutex.Unlock()
 			}
 		}
 	}()
@@ -157,12 +168,16 @@ func (p *Publisher) Stop() {
 	p.Save()
 }
 
+// func Stopped returns whether the publisher stopped or not
 func (p *Publisher) Stopped() bool {
+	log.Println("publisher stopped")
 	return p.stopped
 }
 
 // func Save saves the state of the publisher to the configured saving location 
 func (p *Publisher) Save() error {
+	log.Println("publisher save")
+
 	p.mutex.RLock()
 	defer p.mutex.RUnlock()
 	
@@ -192,13 +207,37 @@ func (p *Publisher) Save() error {
 
 // func Categories returns all categories for which the publisher is publishing news
 func (p *Publisher) Categories () []string {
+	log.Println("publisher categories")
 
 	a := make([]string, 0, len(p.subs))
 	
 	for k := range p.subs {
 		a = append(a, k)
 	}
-
+	
 	return a
 }
 
+// func Articles returns the articles from the archive as specified by the IDs
+func (p *Publisher) Articles (ids ...int) []Article {
+	log.Printf("publisher articles")
+
+	p.mutex.RLock()
+	defer p.mutex.RUnlock()
+	a := []Article{}
+
+	for _, id := range ids {
+		log.Printf("publisher articles id %d", id)
+		a = append(a, p.articles[id])	
+	}
+	return a
+}
+
+// func Clear clears the publisher archive
+func (p *Publisher) Clear () {
+	log.Printf("publisher clear")
+	p.mutex.Lock()
+	defer p.mutex.Unlock()
+	
+	p.articles = nil
+}
