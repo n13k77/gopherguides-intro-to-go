@@ -3,6 +3,7 @@ package news
 import (
 	"os"
 	"testing"
+	"time"
 )
 
 
@@ -15,6 +16,88 @@ func createConfig(t testing.TB, backupfile string, publishfile string) *Publishe
 	}
 }
 
+func TestPublisherStart(t *testing.T) {
+	testCases := []struct {
+		desc	string
+		config  *PublisherConfig
+	}{
+		{desc: "start publisher", config: createConfig(t, "./test.txt", "./test.out")},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.desc, func(t *testing.T) {
+
+			p, err := Start("./test.txt")
+
+			if err != nil || p.stopped != false {
+				t.Fatalf("error starting publisher")
+			}
+
+			// if a Publisher is created during the test run, clean it up
+			if p != nil && ! p.Stopped() {
+				p.Stop()
+			}
+		})
+	}
+}
+
+func TestPublisherStartFromStatefile(t *testing.T) {
+	tc := struct {
+		desc	string
+		config 	*PublisherConfig
+	}{
+		desc: "test publisher start from statefile", 
+		config: createConfig(t, "./test.txt", "./test.out"),
+	}
+	t.Run(tc.desc, func(t *testing.T) {
+
+		p := NewPublisher(*tc.config)
+		sub1 := NewSubscriber()
+		sub2 := NewSubscriber()
+		src := NewRandomSource()
+		
+		p.DistributeSource(src)
+		
+		sub1.Subscribe(p, "World")
+		sub1.Subscribe(p, "Economics")
+		sub2.Subscribe(p, "cooking")
+		src.Publish()
+
+		// TODO: this sleep is necessary ATM to avoid a race condition. If the publisher
+		// gets cancelled, the source cannot be cancelled yet, this is still to be implemented.
+		// Then, the situation can occur that the source publishes on a closed channel, causing
+		// a panic. This sleeps is a workaround for that now. 
+		time.Sleep(1 * time.Second)
+		p.Stop()
+
+		np, err := Start(tc.config.Backupfile)
+		if err != nil {
+			t.Fatalf("error starting publisher from configfile")
+		}
+
+		// check properties of new publisher
+		act := np.config.Backupfile
+		exp := tc.config.Backupfile
+		if exp != act {
+			t.Fatalf("error for config Backupfile, expected %s, got %s", exp, act)
+		}
+
+		act = np.config.Publishfile
+		exp = tc.config.Publishfile
+		if exp != act {
+			t.Fatalf("error for config Publishfile, expected %s, got %s", exp, act)
+		}
+
+		bact := np.config.Jsonformat
+		bexp := tc.config.Jsonformat
+		if bexp != bact {
+			t.Fatalf("error for config Jsonformat, expected %t, got %t", bexp, bact)
+		}
+		np.Stop()
+	})
+}
+
+// This test is working for an empty publisher.
+// TODO: issues with categories and articles, they are not properly marshalled into JSON.
 func TestPublisherSave(t *testing.T) {
 	testCases := []struct {
 		desc	string

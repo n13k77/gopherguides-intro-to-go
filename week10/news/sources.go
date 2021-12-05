@@ -39,8 +39,9 @@ func (rs *RandomSource) GetSourceChannel() <-chan Article {
 func (rs *RandomSource) Publish() {
 	log.Println("sources publish")
 	for _, a := range rs.articles {
+		log.Printf("sources publish article %s", a.Title())
 		rs.ch <- a
-		}
+	}
 }
 
 func (rs *RandomSource) Stop() {

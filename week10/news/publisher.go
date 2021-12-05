@@ -2,6 +2,8 @@ package news
 
 import (
 	"encoding/json"
+	"fmt"
+	"io/ioutil"
 	"log"
 	"os"
 	"strings"
@@ -50,6 +52,102 @@ func NewPublisher(config PublisherConfig) (*Publisher) {
 	return p
 }
 
+// func Start starts the publisher. If no backup file is provided, a new 
+// instance is created of the Publisher type. If a backup file is provided,
+// settings from that file are used
+
+func Start(file string) (*Publisher, error){
+	log.Println("publisher start")
+
+	if file == "" {
+		log.Println("publisher start publisher new config")
+		p := NewPublisher(PublisherConfig{})
+		return p, nil
+	}
+
+	log.Println("publisher start publisher existing config")
+	jsonFile, err := os.Open(file)
+	if err != nil {
+		return nil, err
+	}
+	defer jsonFile.Close()
+
+	byteValue, _ := ioutil.ReadAll(jsonFile)
+
+	var ps PublisherState
+	json.Unmarshal([]byte(byteValue),&ps)
+
+	p := NewPublisher(ps.Config)
+	p.articles = ps.Articles
+
+	log.Println("bla")
+	return p, nil
+}
+
+// func Stop stops the publisher 
+func (p *Publisher) Stop() {
+	log.Println("publisher stop")
+	p.mutex.Lock()
+	
+	if !p.stopped {
+		p.stopped = true
+		for _, subs := range p.subs {
+			for _, ch := range subs {
+				// TODO: cancel subscribers as well
+				close(ch)
+			}
+		}
+	}
+	
+	p.mutex.Unlock()
+	p.Save()
+}
+
+// func Stopped returns whether the publisher stopped or not
+func (p *Publisher) Stopped() bool {
+	log.Println("publisher stopped")
+	return p.stopped
+}
+
+// func Save saves the state of the publisher to the configured saving location 
+func (p *Publisher) Save() error {
+	log.Println("publisher save")
+
+	p.mutex.RLock()
+	defer p.mutex.RUnlock()
+
+	var ps PublisherState
+
+	ps.Articles = p.articles
+	ps.Categories = p.Categories()
+	ps.Config = p.config
+
+	// ps := PublisherState {
+	// 	Config: p.config,
+	// 	Articles: p.articles,
+	// }
+
+	// convert the config to json
+	data, err := json.Marshal(ps)
+
+	if err != nil {
+		return err
+	}
+	
+	fmt.Println(p.articles)
+	fmt.Println(ps.Articles)
+	fmt.Println(string(data))
+
+	err = os.WriteFile(ps.Config.Backupfile, data, 0644);
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+
 // func Subscribe() adds a subscriber to a publisher. The subscriber has to
 // provide the topic to which it is subscribing and its unique identifier
 func (p *Publisher) Subscribe(id int, category string) (<-chan Article, error) {
@@ -59,7 +157,7 @@ func (p *Publisher) Subscribe(id int, category string) (<-chan Article, error) {
 	defer p.mutex.Unlock()
 
 	ch := make(chan Article)
-	// use lowercase for category, prevent that SpoRtS and sports are different categories
+	// use lowercase for category, guarantees that SpoRtS and sports are same categories
 	lc := strings.ToLower(category)	
 
 	if _, exists := p.subs[lc][id]; exists {
@@ -115,9 +213,9 @@ func (p *Publisher) Unsubscribe(id int, categories ...string) {
 	}
 }
 
-// func AddSource() adds a news source to the publisher
+// func AddSource() adds a news source to the publisher, distributes its articles
 func (p *Publisher) DistributeSource(s Source) {
-	log.Println("publisher add source")
+	log.Println("publisher distribute source")
 
 	p.mutex.Lock()
 	p.src = append(p.src, s.GetSourceChannel())
@@ -125,8 +223,8 @@ func (p *Publisher) DistributeSource(s Source) {
 
 	go func() {
 		// start listening to articles that are published by the source
+		log.Println("publisher distribute source start listening")
 		for a := range s.GetSourceChannel() {
-			log.Println("publisher add source start listening")
 
 			// add the received article to the archive 
 			p.mutex.Lock()
@@ -136,76 +234,20 @@ func (p *Publisher) DistributeSource(s Source) {
 
 			lc := strings.ToLower(a.Category())
 			if _, ok := p.subs[lc]; ok {
-				log.Println("publisher add source publish existing category")
+				log.Println("publisher distribute source publish existing category")
 				p.mutex.RLock()
 				for _, ch := range p.subs[lc] {
 					ch<- a
 				}
 				p.mutex.RUnlock()
 			} else {
-				log.Println("publisher add source publish new category")
+				log.Println("publisher distribute source publish new category")
 				p.mutex.Lock()
 				p.subs[lc] = make(map[int]chan Article)
 				p.mutex.Unlock()
 			}
 		}
 	}()
-}
-
-// func Stop stops the publisher 
-func (p *Publisher) Stop() {
-	log.Println("publisher stop")
-	p.mutex.Lock()
-	
-	if !p.stopped {
-		p.stopped = true
-		for _, subs := range p.subs {
-			for _, ch := range subs {
-				// TODO: cancel subscribers as well
-				close(ch)
-			}
-		}
-	}
-	
-	p.mutex.Unlock()
-	p.Save()
-}
-
-// func Stopped returns whether the publisher stopped or not
-func (p *Publisher) Stopped() bool {
-	log.Println("publisher stopped")
-	return p.stopped
-}
-
-// func Save saves the state of the publisher to the configured saving location 
-func (p *Publisher) Save() error {
-	log.Println("publisher save")
-
-	p.mutex.RLock()
-	defer p.mutex.RUnlock()
-	
-	pc := PublisherState {
-		Config: p.config,
-		Articles: p.articles,
-	}
-
-	// fill the array with topics, save the topics since they are part of the state
-	pc.Categories = p.Categories()
-
-	// convert the config to json
-	data, err := json.Marshal(pc)
-
-	if err != nil {
-		return err
-	}
-	
-	err = os.WriteFile(pc.Config.Backupfile, data, 0644);
-
-	if err != nil {
-		return err
-	}
-
-	return nil
 }
 
 // func Categories returns all categories for which the publisher is publishing news
